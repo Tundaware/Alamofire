@@ -149,6 +149,12 @@ open class SessionManager {
     /// `nil` by default.
     open var backgroundCompletionHandler: (() -> Void)?
 
+    /// Controls whether session.invalidateAndCancel is called with the SessionManager
+    /// is deinited. When using a background download task allowing this to happen breaks
+    /// support for background downloads that occur out of process. Setting it to false moves
+    /// responsibility for knowing when to call invalidateAndCancel to application code
+    open var shouldInvalidateAndCancelOnDeinit = true
+
     let queue = DispatchQueue(label: "org.alamofire.session-manager." + UUID().uuidString)
 
     // MARK: - Lifecycle
@@ -207,7 +213,9 @@ open class SessionManager {
     }
 
     deinit {
-        session.invalidateAndCancel()
+        if shouldInvalidateAndCancelOnDeinit {
+            session.invalidateAndCancel()
+        }
     }
 
     // MARK: - Data Request
