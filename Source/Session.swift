@@ -61,6 +61,7 @@ open class Session {
     public let eventMonitor: CompositeEventMonitor
     /// `EventMonitor`s included in all instances. `[AlamofireNotifications()]` by default.
     public let defaultEventMonitors: [EventMonitor] = [AlamofireNotifications()]
+    public let invalidateOnDeinit: Bool
 
     /// Internal map between `Request`s and any `URLSessionTasks` that may be in flight for them.
     var requestTaskMap = RequestTaskMap()
@@ -99,6 +100,9 @@ open class Session {
     ///                               `nil` by default.
     ///   - eventMonitors:            Additional `EventMonitor`s used by the instance. Alamofire always adds a
     ///                               `AlamofireNotifications` `EventMonitor` to the array passed here. `[]` by default.
+    ///   - invalidateOnDeinit:       The default behavior is to invalidate and cancel the session on deinit. This
+    ///                               breaks the important background download feature. Passing false to this will
+    ///                               allow you to handle invalidation and cancelling yourself.
     public init(session: URLSession,
                 delegate: SessionDelegate,
                 rootQueue: DispatchQueue,
@@ -109,7 +113,8 @@ open class Session {
                 serverTrustManager: ServerTrustManager? = nil,
                 redirectHandler: RedirectHandler? = nil,
                 cachedResponseHandler: CachedResponseHandler? = nil,
-                eventMonitors: [EventMonitor] = []) {
+                eventMonitors: [EventMonitor] = [],
+                invalidateOnDeinit: Bool = true) {
         precondition(session.configuration.identifier == nil,
                      "Alamofire does not support background URLSessionConfigurations.")
         precondition(session.delegateQueue.underlyingQueue === rootQueue,
@@ -126,6 +131,7 @@ open class Session {
         self.redirectHandler = redirectHandler
         self.cachedResponseHandler = cachedResponseHandler
         eventMonitor = CompositeEventMonitor(monitors: defaultEventMonitors + eventMonitors)
+        self.invalidateOnDeinit = invalidateOnDeinit
         delegate.eventMonitor = eventMonitor
         delegate.stateProvider = self
     }
@@ -164,6 +170,9 @@ open class Session {
     ///                               `nil` by default.
     ///   - eventMonitors:            Additional `EventMonitor`s used by the instance. Alamofire always adds a
     ///                               `AlamofireNotifications` `EventMonitor` to the array passed here. `[]` by default.
+    ///   - invalidateOnDeinit:       The default behavior is to invalidate and cancel the session on deinit. This
+    ///                               breaks the important background download feature. Passing false to this will
+    ///                               allow you to handle invalidation and cancelling yourself.
     public convenience init(configuration: URLSessionConfiguration = URLSessionConfiguration.af.default,
                             delegate: SessionDelegate = SessionDelegate(),
                             rootQueue: DispatchQueue = DispatchQueue(label: "org.alamofire.session.rootQueue"),
@@ -174,7 +183,8 @@ open class Session {
                             serverTrustManager: ServerTrustManager? = nil,
                             redirectHandler: RedirectHandler? = nil,
                             cachedResponseHandler: CachedResponseHandler? = nil,
-                            eventMonitors: [EventMonitor] = []) {
+                            eventMonitors: [EventMonitor] = [],
+                            invalidateOnDeinit: Bool = true) {
         precondition(configuration.identifier == nil, "Alamofire does not support background URLSessionConfigurations.")
 
         let delegateQueue = OperationQueue(maxConcurrentOperationCount: 1, underlyingQueue: rootQueue, name: "org.alamofire.session.sessionDelegateQueue")
@@ -190,12 +200,15 @@ open class Session {
                   serverTrustManager: serverTrustManager,
                   redirectHandler: redirectHandler,
                   cachedResponseHandler: cachedResponseHandler,
-                  eventMonitors: eventMonitors)
+                  eventMonitors: eventMonitors,
+                  invalidateOnDeinit: invalidateOnDeinit)
     }
 
     deinit {
         finishRequestsForDeinit()
-        session.invalidateAndCancel()
+        if (invalidateOnDeinit) {
+            session.invalidateAndCancel()
+        }
     }
 
     // MARK: - Cancellation
