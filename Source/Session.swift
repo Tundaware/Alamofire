@@ -115,8 +115,8 @@ open class Session {
                 cachedResponseHandler: CachedResponseHandler? = nil,
                 eventMonitors: [EventMonitor] = [],
                 invalidateOnDeinit: Bool = true) {
-        precondition(session.configuration.identifier == nil,
-                     "Alamofire does not support background URLSessionConfigurations.")
+//        precondition(session.configuration.identifier == nil,
+//                     "Alamofire does not support background URLSessionConfigurations.")
         precondition(session.delegateQueue.underlyingQueue === rootQueue,
                      "Session(session:) intializer must be passed the DispatchQueue used as the delegateQueue's underlyingQueue as rootQueue.")
 
@@ -185,7 +185,7 @@ open class Session {
                             cachedResponseHandler: CachedResponseHandler? = nil,
                             eventMonitors: [EventMonitor] = [],
                             invalidateOnDeinit: Bool = true) {
-        precondition(configuration.identifier == nil, "Alamofire does not support background URLSessionConfigurations.")
+//        precondition(configuration.identifier == nil, "Alamofire does not support background URLSessionConfigurations.")
 
         let delegateQueue = OperationQueue(maxConcurrentOperationCount: 1, underlyingQueue: rootQueue, name: "org.alamofire.session.sessionDelegateQueue")
         let session = URLSession(configuration: configuration, delegate: delegate, delegateQueue: delegateQueue)
